@@ -76,153 +76,116 @@ Client-server chat applications are foundational to real-time communication over
 ## Program
 
 ## Server.py
-
+```
 import socket
-
 import threading
 
-HOST = '0.0.0.0'
-
+HOST = '127.0.0.1'   # Localhost
 PORT = 12345
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
 server.bind((HOST, PORT))
-
 server.listen()
 
 clients = []
-
 names = []
 
-def broadcast(message):
+print("Server started... Waiting for connections...")
 
+def broadcast(message):
     for client in clients:
-    
-        client.send(message)
+        try:
+            client.send(message)
+        except:
+            pass
 
 def handle(client):
-    
     while True:
-    
-        
-    try:
-    
+        try:
             message = client.recv(1024)
-            
+            if not message:
+                break
             broadcast(message)
-        
         except:
-        
-            index = clients.index(client)
-            
-            clients.remove(client)
-            
-            client.close()
-            
-            name = names[index]
-            
-            broadcast(f"{name} left the chat!".encode('utf-8'))
-            
-            names.remove(name)
-            
             break
 
-def receive():
-    
-    print("Server is running...")
-    
-    while True:
-    
-        client, address = server.accept()
-        
-        print(f"Connected with {str(address)}")
+    # Remove client if disconnected
+    if client in clients:
+        index = clients.index(client)
+        name = names[index]
 
-        
+        clients.remove(client)
+        names.remove(name)
+        client.close()
+
+        print(f"{name} disconnected")
+        broadcast(f"{name} left the chat!".encode('utf-8'))
+
+def receive():
+    while True:
+        client, address = server.accept()
+        print(f"Connected with {address}")
+
         client.send("NAME".encode('utf-8'))
-        
         name = client.recv(1024).decode('utf-8')
-        
+
         names.append(name)
-        
         clients.append(client)
 
-        print(f"Username is {name}")
-        
+        print(f"Username: {name}")
         broadcast(f"{name} joined the chat!".encode('utf-8'))
 
         thread = threading.Thread(target=handle, args=(client,))
-        
         thread.start()
 
 receive()
+```
 
 ## Client.py
-
+```
 import socket
-
 import threading
 
-
-HOST = '127.0.0.1'   # use server IP if different system
-
+HOST = '127.0.0.1'
 PORT = 12345
 
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
 client.connect((HOST, PORT))
 
 name = input("Enter your name: ")
 
 def receive():
-
     while True:
-    
         try:
-        
             message = client.recv(1024).decode('utf-8')
-            
-            if message == 'NAME':
-            
+            if message == "NAME":
                 client.send(name.encode('utf-8'))
-            
             else:
-            
                 print(message)
-        
         except:
-        
-            print("Error!")
-            
-            
-        client.close()
-        
+            print("Disconnected from server")
+            client.close()
             break
 
 def write():
-    
     while True:
-    
-        msg = f"{name}: {input('')}"
-        
-        client.send(msg.encode('utf-8'))
-
-
+        try:
+            msg = f"{name}: {input()}"
+            client.send(msg.encode('utf-8'))
+        except:
+            break
 
 thread1 = threading.Thread(target=receive)
-
 thread1.start()
 
 thread2 = threading.Thread(target=write)
-
 thread2.start()
+```
 
 ## Output
 
-<img width="923" height="149" alt="Screenshot 2026-04-24 183421" src="https://github.com/user-attachments/assets/8d1ef0ef-8796-44fa-8fc5-dc04d8d2411e" />
-
-<img width="848" height="181" alt="Screenshot 2026-04-24 183407" src="https://github.com/user-attachments/assets/1f13178a-5506-47c5-88f1-60cb17baf6f1" />
-
+![alt text](<Screenshot 2026-04-25 105412.png>)
+![alt text](<Screenshot 2026-04-25 105340.png>)
 
 ## Result:
 
